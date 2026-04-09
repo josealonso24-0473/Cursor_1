@@ -1,52 +1,70 @@
 {% extends "base.html" %}
-
-{% block title %}Reporte de stock bajo{% endblock %}
+{% block title %}Reporte de Stock Bajo{% endblock %}
+{% block nav_rep_low %}active{% endblock %}
+{% block page_title %}Reporte de Stock Bajo{% endblock %}
 
 {% block content %}
-<h1 class="h4 mb-3">Productos con stock bajo</h1>
-
-<form method="get" class="mb-3">
-  <button type="submit" name="export" value="csv" class="btn btn-outline-primary">
+<div class="section-head">
+  <div><h1>Reporte de Stock Bajo</h1><p>Productos que han alcanzado o superado su nivel mínimo de stock</p></div>
+  <a href="?export=csv" class="btn-csv">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Exportar CSV
-  </button>
-</form>
+  </a>
+</div>
 
-<table class="table table-striped table-sm">
-  <thead>
-    <tr>
-      <th>SKU</th>
-      <th>Nombre</th>
-      <th>Stock</th>
-      <th>Mínimo</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in products %}
-    <tr>
-      <td>{{ p.sku }}</td>
-      <td>{{ p.name }}</td>
-      <td>{{ p.stock_quantity }}</td>
-      <td>{{ p.minimum_stock }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="4">No hay productos con stock bajo.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% if page_obj.has_other_pages %}
-<nav aria-label="Paginación" class="mt-2">
-  <ul class="pagination pagination-sm">
-    {% if page_obj.has_previous %}
-    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
-    {% endif %}
-    <li class="page-item disabled"><span class="page-link">Pág. {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}
-    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
-    {% endif %}
-  </ul>
-</nav>
+{% if products %}
+<div class="alert alert-warning" style="margin-bottom:1.25rem">
+  <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <span>Se encontraron <strong>{{ products|length }}</strong> producto(s) con stock bajo. Se recomienda gestionar la reposición.</span>
+</div>
 {% endif %}
-{% endblock %}
 
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>SKU</th><th>Producto</th><th>Categoría</th><th>Stock actual</th><th>Stock mínimo</th><th>Déficit</th><th>Proveedor</th><th>Acción</th></tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td><span class="sku-tag">{{ p.sku }}</span></td>
+          <td style="font-weight:500">{{ p.name }}</td>
+          <td>{{ p.category|default:"—" }}</td>
+          <td>
+            <span style="font-size:16px;font-weight:600;color:{% if p.stock_quantity == 0 %}var(--danger){% else %}var(--warning){% endif %}">{{ p.stock_quantity }}</span>
+          </td>
+          <td style="color:var(--text-secondary)">{{ p.minimum_stock }}</td>
+          <td>
+            {% with deficit=p.minimum_stock|add:"-"|add:p.stock_quantity|stringformat:"s" %}
+            <span class="badge badge-red">{{ p.minimum_stock|add:0 }}</span>
+            {% endwith %}
+          </td>
+          <td style="color:var(--text-secondary)">{{ p.supplier|default:"—" }}</td>
+          <td>
+            <a href="{% url 'inventory:movement_create' %}?product={{ p.pk }}" class="btn btn-accent btn-sm">Reponer</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted)">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;margin:0 auto 0.75rem"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Todos los productos tienen stock suficiente ✓
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="table-footer">
+    <span></span>
+    <div class="pagination" style="margin-top:0">
+      {% if page_obj.has_previous %}<a class="pg-btn" href="?page={{ page_obj.previous_page_number }}">← Anterior</a>{% endif %}
+      <span class="pg-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="pg-btn" href="?page={{ page_obj.next_page_number }}">Siguiente →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

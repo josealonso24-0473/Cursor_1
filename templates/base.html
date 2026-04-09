@@ -3,173 +3,356 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}Sistema de Inventario{% endblock %}</title>
-
-  <!-- Bootstrap -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-
-  <!-- Fuente moderna -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
+  <title>{% block title %}Inventario Pro{% endblock %} — Sistema de Gestión de Inventario</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body {
-      background-color: #f4f6f9;
-      font-family: 'Inter', sans-serif;
+    :root {
+      --bg: #F7F6F3;
+      --surface: #FFFFFF;
+      --surface2: #F0EEE9;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.14);
+      --text-primary: #1A1916;
+      --text-secondary: #6B6963;
+      --text-muted: #9C9890;
+      --accent: #1D6B4A;
+      --accent-light: #E1F5EE;
+      --accent-dark: #155c3e;
+      --danger: #C5392A;
+      --danger-light: #FCEBEB;
+      --warning: #BA7517;
+      --warning-light: #FAEEDA;
+      --info: #185FA5;
+      --info-light: #E6F1FB;
+      --sidebar-w: 240px;
+      --font: 'DM Sans', -apple-system, sans-serif;
+      --mono: 'DM Mono', monospace;
+      --radius: 10px;
+      --radius-lg: 14px;
     }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
 
-    /* Navbar más moderna */
-    .navbar {
-      background: linear-gradient(90deg, #1e3c72, #2a5298);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w); background: #0f2e1e; color: #fff;
+      display: flex; flex-direction: column; position: fixed;
+      top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto;
     }
-
-    .navbar-brand {
-      font-weight: 600;
-      letter-spacing: 0.5px;
+    .sidebar-brand {
+      padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
     }
-
-    .nav-link {
-      font-weight: 500;
+    .brand-icon {
+      width: 34px; height: 34px; background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-
-    /* Contenedor principal */
-    .main-container {
-      padding-bottom: 40px;
+    .brand-icon svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .brand-name { font-size: 15px; font-weight: 600; line-height: 1.2; }
+    .brand-sub { font-size: 10px; color: rgba(255,255,255,0.4); }
+    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; }
+    .nav-section { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 0.5rem; margin: 1rem 0 0.4rem; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+      border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.65);
+      font-size: 13.5px; font-weight: 400; transition: all .15s; margin-bottom: 1px;
     }
-
-    /* Cards más suaves */
-    .card {
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(93,202,165,0.18); color: #5DCAA5; font-weight: 500; }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .sidebar-user {
+      padding: 0.875rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
     }
-
-    /* Botones más elegantes */
-    .btn {
-      border-radius: 8px;
+    .user-avatar {
+      width: 32px; height: 32px; background: var(--accent); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
     }
-
-    /* Tablas más limpias */
-    .table {
-      border-radius: 10px;
-      overflow: hidden;
+    .user-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.4); }
+    .btn-logout {
+      margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.4);
+      cursor: pointer; padding: 4px; border-radius: 6px; transition: color .15s; display: flex;
     }
+    .btn-logout:hover { color: rgba(255,255,255,0.8); }
+    .btn-logout svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    .table thead {
-      background-color: #f1f3f5;
+    /* ── Main content ── */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0.875rem 1.75rem; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 50;
     }
+    .topbar-title { font-size: 15px; font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .badge-alert {
+      background: var(--danger-light); color: var(--danger); border-radius: 20px;
+      padding: 4px 10px; font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .badge-alert svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+    .mock-banner {
+      background: var(--info-light); color: var(--info);
+      padding: 6px 1.75rem; font-size: 12px; font-weight: 500;
+      border-bottom: 1px solid rgba(24,95,165,0.15);
+    }
+    .content { padding: 1.75rem; flex: 1; }
 
-    /* Alertas más suaves */
-    .alert {
-      border-radius: 8px;
+    /* ── Cards ── */
+    .card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .card-title { font-size: 14px; font-weight: 600; }
+    .card-body { padding: 1.25rem; }
+
+    /* ── Stat cards ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.125rem; }
+    .stat-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .stat-icon svg { width: 18px; height: 18px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .si-green { background: var(--accent-light); } .si-green svg { stroke: var(--accent); }
+    .si-red { background: var(--danger-light); } .si-red svg { stroke: var(--danger); }
+    .si-amber { background: var(--warning-light); } .si-amber svg { stroke: var(--warning); }
+    .si-blue { background: var(--info-light); } .si-blue svg { stroke: var(--info); }
+    .stat-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-value { font-size: 26px; font-weight: 600; line-height: 1.1; margin-top: 4px; }
+    .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Section header ── */
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; gap: 1rem; }
+    .section-head h1 { font-size: 20px; font-weight: 600; }
+    .section-head p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all .15s; text-decoration: none; }
+    .btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-sm svg { width: 12px; height: 12px; }
+    .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-strong); }
+    .btn-ghost:hover { background: var(--bg); color: var(--text-primary); }
+    .btn-danger { background: var(--danger-light); color: var(--danger); border-color: transparent; }
+    .btn-danger:hover { background: #f7c1c1; }
+    .btn-warning { background: var(--warning-light); color: var(--warning); border-color: transparent; }
+    .btn-warning:hover { background: #fac775; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 1rem 10px; text-align: left; white-space: nowrap; }
+    tbody tr { border-top: 1px solid var(--border); transition: background .1s; }
+    tbody tr:hover { background: var(--bg); }
+    tbody td { padding: 11px 1rem; vertical-align: middle; }
+    .sku-tag { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); background: var(--bg); padding: 2px 8px; border-radius: 5px; border: 1px solid var(--border); white-space: nowrap; }
+
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+    .badge-green { background: var(--accent-light); color: var(--accent); }
+    .badge-red { background: var(--danger-light); color: var(--danger); }
+    .badge-amber { background: var(--warning-light); color: var(--warning); }
+    .badge-blue { background: var(--info-light); color: var(--info); }
+    .badge-gray { background: var(--surface2); color: var(--text-secondary); }
+
+    /* ── Stock bar ── */
+    .stock-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .stock-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; min-width: 50px; }
+    .stock-fill { height: 100%; border-radius: 3px; }
+    .sf-ok { background: var(--accent); }
+    .sf-low { background: var(--warning); }
+    .sf-empty { background: var(--danger); }
+    .stock-num { font-size: 13px; font-weight: 500; min-width: 24px; text-align: right; }
+
+    /* ── Forms ── */
+    .form-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.5rem; max-width: 700px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="number"],
+    .form-group input[type="date"],
+    .form-group input[type="password"],
+    .form-group select,
+    .form-group textarea {
+      padding: 9px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px;
+      font-family: var(--font); font-size: 13.5px; background: var(--bg);
+      color: var(--text-primary); outline: none; transition: border-color .15s, background .15s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); background: #fff; }
+    .form-group input.is-invalid, .form-group select.is-invalid { border-color: var(--danger); }
+    .form-error { color: var(--danger); font-size: 12px; margin-top: 2px; }
+    .form-actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+    .form-check-group { display: flex; align-items: center; gap: 8px; padding: 9px 0; }
+    .form-check-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+    .form-check-group label { font-size: 13.5px; color: var(--text-primary); cursor: pointer; }
+
+    /* ── Alert banners ── */
+    .alert { border-radius: 10px; padding: 12px 16px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1.25rem; }
+    .alert svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+    .alert-success { background: var(--accent-light); color: #0a4a2e; }
+    .alert-danger, .alert-error { background: var(--danger-light); color: var(--danger); }
+    .alert-warning { background: var(--warning-light); color: #6B4100; }
+    .alert-info { background: var(--info-light); color: #0a3a6b; }
+    .alert-close { margin-left: auto; background: none; border: none; cursor: pointer; color: inherit; opacity: 0.6; font-size: 16px; line-height: 1; padding: 0; }
+    .alert-close:hover { opacity: 1; }
+
+    /* ── Filters bar ── */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filters input, .filters select {
+      padding: 7px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px;
+      font-family: var(--font); font-size: 13px; background: var(--bg);
+      color: var(--text-primary); outline: none; transition: border-color .15s;
+    }
+    .filters input:focus, .filters select:focus { border-color: var(--accent); background: #fff; }
+    .filters input { min-width: 180px; }
+
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; gap: 4px; margin-top: 1.25rem; justify-content: center; }
+    .pg-btn { padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface); font-size: 13px; font-family: var(--font); color: var(--text-primary); text-decoration: none; transition: all .15s; }
+    .pg-btn:hover { background: var(--bg); }
+    .pg-btn.current { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+    .pg-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-state svg { width: 36px; height: 36px; fill: none; stroke: var(--border-strong); stroke-width: 1.5; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Dashboard grid ── */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+    /* ── Movement types ── */
+    .mv-entry { color: var(--accent); font-weight: 500; }
+    .mv-exit { color: var(--danger); font-weight: 500; }
+    .mv-adj { color: var(--warning); font-weight: 500; }
+
+    /* ── CSV button ── */
+    .btn-csv { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border-strong); border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-primary); font-family: var(--font); transition: all .15s; text-decoration: none; }
+    .btn-csv:hover { background: var(--border); }
+    .btn-csv svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── Table footer ── */
+    .table-footer { padding: 0.875rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); }
+    .table-count { font-size: 12px; color: var(--text-muted); }
+
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .main { margin-left: 0; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid-3 { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
-
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark mb-4">
-  <div class="container">
-    <a class="navbar-brand" href="{% url 'dashboard:index' %}">
-      Inventario Pro
-    </a>
-
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#navbarNav"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
-
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'products:list' %}">
-            Productos
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'inventory:movements' %}">
-            Movimientos
-          </a>
-        </li>
-
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-            Reportes
-          </a>
-          <ul class="dropdown-menu shadow-sm border-0">
-            <li>
-              <a class="dropdown-item" href="{% url 'reports:movement_report' %}">
-                Movimientos
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item" href="{% url 'reports:low_stock_report' %}">
-                Stock bajo
-              </a>
-            </li>
-          </ul>
-        </li>
-
-      </ul>
-
-      <ul class="navbar-nav align-items-center">
-        {% if user.is_authenticated %}
-        <li class="nav-item">
-          <span class="navbar-text me-3">
-            {{ user.username }}
-          </span>
-        </li>
-        <li class="nav-item">
-          <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-light">
-              Salir
-            </button>
-          </form>
-        </li>
-        {% else %}
-        <li class="nav-item">
-          <a class="btn btn-sm btn-light" href="{% url 'accounts:login' %}">
-            Entrar
-          </a>
-        </li>
-        {% endif %}
-      </ul>
-
+<div class="layout">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="15"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Inventario Pro</div>
+        <div class="brand-sub">v1.0 · 2026</div>
+      </div>
     </div>
-  </div>
-</nav>
 
-<div class="container main-container">
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <a href="{% url 'dashboard:index' %}" class="nav-item {% block nav_dashboard %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
 
-  {% if USE_MOCK_DATA %}
-  <div class="alert alert-info py-2 mb-3">
-    <strong>Modo visualización:</strong> datos mock desde archivo.
-  </div>
-  {% endif %}
+      <div class="nav-section">Inventario</div>
+      <a href="{% url 'products:list' %}" class="nav-item {% block nav_products %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Productos
+      </a>
+      <a href="{% url 'inventory:movements' %}" class="nav-item {% block nav_movements %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+        Movimientos
+      </a>
 
-  {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="nav-section">Configuración</div>
+      <a href="{% url 'products:category_list' %}" class="nav-item {% block nav_categories %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Categorías
+      </a>
+      <a href="{% url 'products:supplier_list' %}" class="nav-item {% block nav_suppliers %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Proveedores
+      </a>
+
+      <div class="nav-section">Reportes</div>
+      <a href="{% url 'reports:movement_report' %}" class="nav-item {% block nav_rep_mov %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reporte Movimientos
+      </a>
+      <a href="{% url 'reports:low_stock_report' %}" class="nav-item {% block nav_rep_low %}{% endblock %}">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Stock Bajo
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ user.username|slice:":2"|upper }}</div>
+      <div>
+        <div class="user-name">{{ user.username }}</div>
+        <div class="user-role">{% if user.is_superuser %}Administrador{% else %}Gestor{% endif %}</div>
+      </div>
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin-left:auto">
+        {% csrf_token %}
+        <button type="submit" class="btn-logout" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </form>
     </div>
-    {% endfor %}
-  {% endif %}
+  </aside>
 
-  {% block content %}{% endblock %}
+  <!-- ── Main ── -->
+  <main class="main">
+    {% if USE_MOCK_DATA %}
+    <div class="mock-banner">
+      ⚡ Modo demostración activo — los datos no se guardan en base de datos
+    </div>
+    {% endif %}
+
+    <div class="topbar">
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-right">
+        {% block topbar_right %}{% endblock %}
+      </div>
+    </div>
+
+    <div class="content">
+      {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" role="alert">
+          {% if message.tags == 'success' %}<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>{% endif %}
+          {% if message.tags == 'danger' or message.tags == 'error' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>{% endif %}
+          {% if message.tags == 'warning' %}<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>{% endif %}
+          <span>{{ message }}</span>
+          <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

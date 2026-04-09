@@ -1,57 +1,104 @@
 {% extends "base.html" %}
-
 {% block title %}Productos{% endblock %}
+{% block nav_products %}active{% endblock %}
+{% block page_title %}Productos{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Listado de productos</h1>
-  <a href="{% url 'products:create' %}" class="btn btn-primary btn-sm">Nuevo producto</a>
+<div class="section-head">
+  <div><h1>Productos</h1><p>Gestión del catálogo de productos</p></div>
+  <a href="{% url 'products:create' %}" class="btn btn-accent">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nuevo Producto
+  </a>
 </div>
 
-<table class="table table-striped table-sm">
-  <thead>
-    <tr>
-      <th>SKU</th>
-      <th>Nombre</th>
-      <th>Categoría</th>
-      <th>Proveedor</th>
-      <th>Precio</th>
-      <th>Stock</th>
-      <th>Mínimo</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for product in products %}
-    <tr class="{% if product.stock_quantity <= product.minimum_stock %}table-warning{% endif %}">
-      <td>{{ product.sku }}</td>
-      <td>{{ product.name }}</td>
-      <td>{{ product.category }}</td>
-      <td>{{ product.supplier }}</td>
-      <td>{{ product.unit_price }}</td>
-      <td>{{ product.stock_quantity }}</td>
-      <td>{{ product.minimum_stock }}</td>
-      <td><a href="{% url 'products:update' product.pk %}" class="btn btn-outline-secondary btn-sm">Editar</a></td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="8">No hay productos registrados.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% if page_obj.has_other_pages %}
-<nav aria-label="Paginación" class="mt-2">
-  <ul class="pagination pagination-sm">
-    {% if page_obj.has_previous %}
-    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}">Anterior</a></li>
-    {% endif %}
-    <li class="page-item disabled"><span class="page-link">Pág. {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}
-    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}">Siguiente</a></li>
-    {% endif %}
-  </ul>
-</nav>
-{% endif %}
-{% endblock %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" class="filters" style="flex:1;margin:0">
+      <input type="text" name="q" placeholder="Buscar por nombre o SKU…" value="{{ request.GET.q }}" style="flex:1">
+      <select name="category" onchange="this.form.submit()">
+        <option value="">Todas las categorías</option>
+        {% for c in categories %}
+        <option value="{{ c.id }}" {% if request.GET.category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="low_stock" onchange="this.form.submit()">
+        <option value="">Todo el stock</option>
+        <option value="1" {% if request.GET.low_stock == "1" %}selected{% endif %}>Solo stock bajo</option>
+      </select>
+      <button type="submit" class="btn btn-ghost">Buscar</button>
+      {% if request.GET.q or request.GET.category or request.GET.low_stock %}
+      <a href="{% url 'products:list' %}" class="btn btn-ghost">Limpiar</a>
+      {% endif %}
+    </form>
+  </div>
 
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th>Proveedor</th>
+          <th>Stock</th>
+          <th>Mínimo</th>
+          <th>Precio</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td><span class="sku-tag">{{ p.sku }}</span></td>
+          <td><span style="font-weight:500">{{ p.name }}</span></td>
+          <td>{{ p.category|default:"—" }}</td>
+          <td>{{ p.supplier|default:"—" }}</td>
+          <td>
+            <div class="stock-bar-wrap">
+              <div class="stock-bar">
+                {% if p.minimum_stock > 0 %}
+                  {% widthratio p.stock_quantity p.minimum_stock 50 as pct %}
+                {% else %}
+                  {% with pct=100 %}{% endwith %}
+                {% endif %}
+                <div class="stock-fill {% if p.stock_quantity == 0 %}sf-empty{% elif p.stock_quantity <= p.minimum_stock %}sf-low{% else %}sf-ok{% endif %}"
+                     style="width:{% if p.minimum_stock > 0 %}{% widthratio p.stock_quantity p.minimum_stock 100 %}{% else %}100{% endif %}%;max-width:100%"></div>
+              </div>
+              <span class="stock-num" style="color:{% if p.stock_quantity == 0 %}var(--danger){% elif p.stock_quantity <= p.minimum_stock %}var(--warning){% else %}var(--text-primary){% endif %}">{{ p.stock_quantity }}</span>
+            </div>
+            {% if p.stock_quantity <= p.minimum_stock %}<div style="font-size:11px;color:var(--danger);margin-top:2px">⚠ Stock bajo</div>{% endif %}
+          </td>
+          <td style="color:var(--text-secondary)">{{ p.minimum_stock }}</td>
+          <td>RD$ {{ p.unit_price }}</td>
+          <td>
+            {% if p.is_active %}<span class="badge badge-green">Activo</span>
+            {% else %}<span class="badge badge-gray">Inactivo</span>{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'products:update' p.pk %}" class="btn btn-ghost btn-sm">Editar</a>
+              <a href="{% url 'inventory:movement_create' %}?product={{ p.pk }}" class="btn btn-ghost btn-sm">Mover</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Sin productos que mostrar</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span class="table-count">{{ products|length }} producto(s)</span>
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}<a class="pg-btn" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}">← Anterior</a>{% endif %}
+      <span class="pg-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="pg-btn" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}">Siguiente →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

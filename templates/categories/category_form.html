@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block nav_categories %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="section-head">
+  <div><h1>{{ title }}</h1><p>{% if category %}Modifica los datos de la categoría{% else %}Crea una nueva categoría para organizar los productos{% endif %}</p></div>
+  <a href="{% url 'products:category_list' %}" class="btn btn-ghost">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Volver a categorías
+  </a>
+</div>
+
+<div class="form-card" style="max-width:500px">
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger" style="margin-bottom:1.25rem">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>{% for e in form.non_field_errors %}{{ e }}{% endfor %}</span>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="form-group" style="margin-bottom:1rem">
+      <label for="id_name">Nombre *</label>
+      <input type="text" name="name" id="id_name" value="{{ form.name.value|default:'' }}" placeholder="Ej. Electrónicos" class="{% if form.name.errors %}is-invalid{% endif %}" autofocus>
+      {% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label for="id_description">Descripción</label>
+      <textarea name="description" id="id_description" rows="3" placeholder="Descripción opcional de la categoría" style="resize:vertical">{{ form.description.value|default:'' }}</textarea>
+      {% for e in form.description.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'products:category_list' %}" class="btn btn-ghost">Cancelar</a>
+      <button type="submit" class="btn btn-accent">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        {% if category %}Actualizar categoría{% else %}Crear categoría{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

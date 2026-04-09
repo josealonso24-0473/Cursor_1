@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Categorías{% endblock %}
+{% block nav_categories %}active{% endblock %}
+{% block page_title %}Categorías{% endblock %}
+
+{% block content %}
+<div class="section-head">
+  <div><h1>Categorías</h1><p>Clasificación y organización de productos</p></div>
+  <a href="{% url 'products:category_create' %}" class="btn btn-accent">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nueva Categoría
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Productos</th>
+          <th>Creada</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td><span style="font-weight:500">{{ cat.name }}</span></td>
+          <td style="color:var(--text-secondary)">{{ cat.description|default:"—" }}</td>
+          <td><span class="badge badge-blue">{{ cat.product_count }}</span></td>
+          <td style="color:var(--text-secondary);font-size:12px">{{ cat.created_at|date:"d/m/Y" }}</td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'products:category_update' cat.pk %}" class="btn btn-ghost btn-sm">Editar</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Sin categorías registradas</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    <span class="table-count">{{ categories|length }} categoría(s)</span>
+  </div>
+</div>
+{% endblock %}

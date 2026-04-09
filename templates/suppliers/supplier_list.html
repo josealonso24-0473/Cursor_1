@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Proveedores{% endblock %}
+{% block nav_suppliers %}active{% endblock %}
+{% block page_title %}Proveedores{% endblock %}
+
+{% block content %}
+<div class="section-head">
+  <div><h1>Proveedores</h1><p>Gestión de proveedores de productos</p></div>
+  <a href="{% url 'products:supplier_create' %}" class="btn btn-accent">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nuevo Proveedor
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email de contacto</th>
+          <th>Teléfono</th>
+          <th>Productos</th>
+          <th>Registrado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sup in suppliers %}
+        <tr>
+          <td><span style="font-weight:500">{{ sup.name }}</span></td>
+          <td>
+            {% if sup.contact_email %}
+            <a href="mailto:{{ sup.contact_email }}" style="color:var(--info)">{{ sup.contact_email }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td style="color:var(--text-secondary)">{{ sup.phone|default:"—" }}</td>
+          <td><span class="badge badge-blue">{{ sup.product_count }}</span></td>
+          <td style="color:var(--text-secondary);font-size:12px">{{ sup.created_at|date:"d/m/Y" }}</td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'products:supplier_update' sup.pk %}" class="btn btn-ghost btn-sm">Editar</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Sin proveedores registrados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    <span class="table-count">{{ suppliers|length }} proveedor(es)</span>
+  </div>
+</div>
+{% endblock %}

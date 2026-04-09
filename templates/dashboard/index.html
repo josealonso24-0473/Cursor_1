@@ -1,79 +1,131 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_right %}
+  {% with low=low_stock_products|length %}
+  {% if low > 0 %}
+  <div class="badge-alert">
+    <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    {{ low }} producto{{ low|pluralize }} en stock bajo
+  </div>
+  {% endif %}
+  {% endwith %}
+{% endblock %}
 
 {% block content %}
-<h1 class="h4 mb-3">Dashboard</h1>
+<div class="section-head">
+  <div><h1>Dashboard</h1><p>Resumen del estado actual del inventario</p></div>
+</div>
 
-<div class="row mb-4">
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Productos con stock bajo</h5>
-        <p class="display-6">{{ low_stock_products|length }}</p>
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon si-blue">
+      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    </div>
+    <div class="stat-label">Productos activos</div>
+    <div class="stat-value">{{ total_products|default:"—" }}</div>
+    <div class="stat-sub">en catálogo</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-red">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div class="stat-label">Stock bajo</div>
+    <div class="stat-value" {% if low_stock_products %}style="color:var(--danger)"{% endif %}>{{ low_stock_products|length }}</div>
+    <div class="stat-sub">productos críticos</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-amber">
+      <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+    </div>
+    <div class="stat-label">Movimientos</div>
+    <div class="stat-value">{{ total_movements|default:"—" }}</div>
+    <div class="stat-sub">registrados en total</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-green">
+      <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    </div>
+    <div class="stat-label">Categorías</div>
+    <div class="stat-value">{{ total_categories|default:"—" }}</div>
+    <div class="stat-sub">activas</div>
+  </div>
+</div>
+
+<!-- Grid -->
+<div class="dashboard-grid">
+  <!-- Stock bajo -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Productos con stock bajo</span>
+      <a href="{% url 'reports:low_stock_report' %}" class="btn btn-ghost btn-sm">Ver reporte</a>
+    </div>
+    <div class="card-body" style="padding:0">
+      {% if low_stock_products %}
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+        <tbody>
+          {% for p in low_stock_products %}
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:10px 1.25rem">
+              <div style="font-weight:500">{{ p.name }}</div>
+              <div style="font-size:11px;color:var(--text-muted)">{{ p.sku }}</div>
+            </td>
+            <td style="padding:10px 1.25rem;text-align:right;white-space:nowrap">
+              <span style="font-size:16px;font-weight:600;color:{% if p.stock_quantity == 0 %}var(--danger){% else %}var(--warning){% endif %}">{{ p.stock_quantity }}</span>
+              <span style="font-size:11px;color:var(--text-muted)"> / {{ p.minimum_stock }} mín</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <p>Sin productos en stock bajo</p>
       </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Movimientos recientes -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Movimientos recientes</span>
+      <a href="{% url 'inventory:movements' %}" class="btn btn-ghost btn-sm">Ver todos</a>
+    </div>
+    <div class="card-body" style="padding:0">
+      {% if recent_movements %}
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+        <tbody>
+          {% for m in recent_movements %}
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:10px 1.25rem">
+              {% if m.movement_type == 'ENTRY' %}<span class="badge badge-green">↑ Entrada</span>
+              {% elif m.movement_type == 'EXIT' %}<span class="badge badge-red">↓ Salida</span>
+              {% else %}<span class="badge badge-amber">⇄ Ajuste</span>{% endif %}
+            </td>
+            <td style="padding:10px 1.25rem;flex:1">
+              <div style="font-weight:500;font-size:13px">{{ m.product.name }}</div>
+            </td>
+            <td style="padding:10px 1.25rem;text-align:right;white-space:nowrap">
+              <span style="font-weight:600">
+                {% if m.movement_type == 'ENTRY' %}+{% elif m.movement_type == 'EXIT' %}−{% else %}={% endif %}{{ m.quantity }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/></svg>
+        <p>Sin movimientos registrados</p>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
-
-<div class="row">
-  <div class="col-md-6">
-    <h2 class="h5">Productos con stock bajo</h2>
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>SKU</th>
-          <th>Nombre</th>
-          <th>Stock</th>
-          <th>Mínimo</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in low_stock_products %}
-        <tr>
-          <td>{{ p.sku }}</td>
-          <td>{{ p.name }}</td>
-          <td>{{ p.stock_quantity }}</td>
-          <td>{{ p.minimum_stock }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4">No hay productos con stock bajo.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="col-md-6">
-    <h2 class="h5">Últimos movimientos</h2>
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Producto</th>
-          <th>Tipo</th>
-          <th>Cantidad</th>
-          <th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in recent_movements %}
-        <tr>
-          <td>{{ m.id }}</td>
-          <td>{{ m.product }}</td>
-          <td>{{ m.movement_type }}</td>
-          <td>{{ m.quantity }}</td>
-          <td>{{ m.created_at }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5">No hay movimientos registrados.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 {% endblock %}
-

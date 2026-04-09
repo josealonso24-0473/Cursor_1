@@ -25,12 +25,22 @@ class MovementListView(ListView):
 
     def get_queryset(self):
         if getattr(settings, "USE_MOCK_DATA", False):
-            return get_mock_movements()
-        return StockMovement.objects.select_related("product", "performed_by").all()
+            movements = get_mock_movements()
+            mov_type = self.request.GET.get("type")
+            if mov_type:
+                movements = [m for m in movements if m.movement_type == mov_type]
+            return movements
+        qs = StockMovement.objects.select_related("product", "performed_by").all()
+        mov_type = self.request.GET.get("type")
+        if mov_type:
+            qs = qs.filter(movement_type=mov_type)
+        return qs
 
 
 @login_required
 def movement_create_view(request):
+    # Pre-select product from querystring
+    initial_product = request.GET.get("product")
     form = get_stock_movement_form(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -46,37 +56,31 @@ def movement_create_view(request):
             except ValueError as exc:
                 form.add_error(None, str(exc))
             else:
-                messages.success(
-                    request,
-                    "Movimiento registrado correctamente (modo mock, no se guarda en BD).",
-                )
+                messages.success(request, "Movimiento registrado correctamente (modo demo).")
                 return redirect("inventory:movements")
-        repo = get_product_repository()
-        subject = StockSubject()
-        subject.attach(LowStockAlertObserver())
-        service = InventoryService(repo, subject)
-        product_id = form.cleaned_data["product"]
-        if hasattr(product_id, "id"):
-            product_id = product_id.id
-        try:
-            service.register_movement(
-                product_id=product_id,
-                movement_type=form.cleaned_data["movement_type"],
-                quantity=form.cleaned_data["quantity"],
-                reason=form.cleaned_data.get("reason") or "",
-                user=request.user,
-            )
-        except InsufficientStockError as exc:
-            form.add_error(None, str(exc))
         else:
-            messages.success(request, "Movimiento registrado correctamente.")
-            return redirect("inventory:movements")
+            repo = get_product_repository()
+            subject = StockSubject()
+            subject.attach(LowStockAlertObserver())
+            service = InventoryService(repo, subject)
+            product_id = form.cleaned_data["product"]
+            if hasattr(product_id, "id"):
+                product_id = product_id.id
+            try:
+                service.register_movement(
+                    product_id=product_id,
+                    movement_type=form.cleaned_data["movement_type"],
+                    quantity=form.cleaned_data["quantity"],
+                    reason=form.cleaned_data.get("reason") or "",
+                    user=request.user,
+                )
+            except InsufficientStockError as exc:
+                form.add_error(None, str(exc))
+            else:
+                messages.success(request, "Movimiento registrado correctamente.")
+                return redirect("inventory:movements")
 
-    return render(
-        request,
-        "inventory/movement_form.html",
-        {"form": form},
-    )
+    return render(request, "inventory/movement_form.html", {"form": form, "initial_product": initial_product})
 
 
 @method_decorator(login_required, name="dispatch")
@@ -88,15 +92,25 @@ class DashboardView(TemplateView):
         repo = get_product_repository()
         product_service = ProductService(repo)
         low_stock_products = product_service.get_low_stock_products()
+
         if getattr(settings, "USE_MOCK_DATA", False):
+            from config.mock_data import MOCK_PRODUCTS, MOCK_CATEGORIES
             recent_movements = get_mock_movements()[:10]
+            total_products = sum(1 for p in MOCK_PRODUCTS if p.is_active)
+            total_movements = len(get_mock_movements())
+            total_categories = len(MOCK_CATEGORIES)
         else:
             recent_movements = StockMovement.objects.select_related("product").all()[:10]
-        context.update(
-            {
-                "low_stock_products": low_stock_products,
-                "recent_movements": recent_movements,
-            }
-        )
-        return context
+            from apps.products.models import Product, Category
+            total_products = Product.objects.filter(is_active=True).count()
+            total_movements = StockMovement.objects.count()
+            total_categories = Category.objects.count()
 
+        context.update({
+            "low_stock_products": low_stock_products,
+            "recent_movements": recent_movements,
+            "total_products": total_products,
+            "total_movements": total_movements,
+            "total_categories": total_categories,
+        })
+        return context

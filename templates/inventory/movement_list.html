@@ -1,57 +1,78 @@
 {% extends "base.html" %}
-
-{% block title %}Movimientos de stock{% endblock %}
+{% block title %}Movimientos de Stock{% endblock %}
+{% block nav_movements %}active{% endblock %}
+{% block page_title %}Movimientos de Stock{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Movimientos de stock</h1>
-  <a href="{% url 'inventory:movement_create' %}" class="btn btn-primary btn-sm"
-    >Nuevo movimiento</a
-  >
+<div class="section-head">
+  <div><h1>Movimientos de Stock</h1><p>Historial de entradas, salidas y ajustes de inventario</p></div>
+  <a href="{% url 'inventory:movement_create' %}" class="btn btn-accent">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nuevo Movimiento
+  </a>
 </div>
 
-<table class="table table-striped table-sm">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Producto</th>
-      <th>Tipo</th>
-      <th>Cantidad</th>
-      <th>Motivo</th>
-      <th>Usuario</th>
-      <th>Fecha</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for m in movements %}
-    <tr>
-      <td>{{ m.id }}</td>
-      <td>{{ m.product }}</td>
-      <td>{{ m.movement_type }}</td>
-      <td>{{ m.quantity }}</td>
-      <td>{{ m.reason }}</td>
-      <td>{{ m.performed_by }}</td>
-      <td>{{ m.created_at }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="7">No hay movimientos registrados.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% if page_obj.has_other_pages %}
-<nav aria-label="Paginación" class="mt-2">
-  <ul class="pagination pagination-sm">
-    {% if page_obj.has_previous %}
-    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
-    {% endif %}
-    <li class="page-item disabled"><span class="page-link">Pág. {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}
-    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
-    {% endif %}
-  </ul>
-</nav>
-{% endif %}
-{% endblock %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" class="filters" style="flex:1;margin:0">
+      <select name="type" onchange="this.form.submit()">
+        <option value="">Todos los tipos</option>
+        <option value="ENTRY" {% if request.GET.type == "ENTRY" %}selected{% endif %}>Entradas</option>
+        <option value="EXIT" {% if request.GET.type == "EXIT" %}selected{% endif %}>Salidas</option>
+        <option value="ADJUSTMENT" {% if request.GET.type == "ADJUSTMENT" %}selected{% endif %}>Ajustes</option>
+      </select>
+    </form>
+  </div>
 
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Tipo</th>
+          <th>Cantidad</th>
+          <th>Motivo</th>
+          <th>Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movements %}
+        <tr>
+          <td style="font-size:12px;color:var(--text-secondary);white-space:nowrap">{{ m.created_at|date:"d/m/Y H:i" }}</td>
+          <td>
+            <div style="font-weight:500">{{ m.product.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">{{ m.product.sku }}</div>
+          </td>
+          <td>
+            {% if m.movement_type == 'ENTRY' %}<span class="badge badge-green">↑ Entrada</span>
+            {% elif m.movement_type == 'EXIT' %}<span class="badge badge-red">↓ Salida</span>
+            {% else %}<span class="badge badge-amber">⇄ Ajuste</span>{% endif %}
+          </td>
+          <td>
+            <span style="font-size:15px;font-weight:600;color:{% if m.movement_type == 'ENTRY' %}var(--accent){% elif m.movement_type == 'EXIT' %}var(--danger){% else %}var(--warning){% endif %}">
+              {% if m.movement_type == 'ENTRY' %}+{% elif m.movement_type == 'EXIT' %}−{% else %}={% endif %}{{ m.quantity }}
+            </span>
+          </td>
+          <td style="color:var(--text-secondary);max-width:200px">{{ m.reason|default:"—" }}</td>
+          <td><span class="badge badge-gray">{{ m.performed_by }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Sin movimientos registrados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="table-footer">
+    <span></span>
+    <div class="pagination" style="margin-top:0">
+      {% if page_obj.has_previous %}<a class="pg-btn" href="?page={{ page_obj.previous_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">← Anterior</a>{% endif %}
+      <span class="pg-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="pg-btn" href="?page={{ page_obj.next_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Siguiente →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
