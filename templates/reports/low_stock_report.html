@@ -12,10 +12,10 @@
   </a>
 </div>
 
-{% if products %}
+{% if page_obj.paginator.count %}
 <div class="alert alert-warning" style="margin-bottom:1.25rem">
   <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-  <span>Se encontraron <strong>{{ products|length }}</strong> producto(s) con stock bajo. Se recomienda gestionar la reposición.</span>
+  <span>Se encontraron <strong>{{ page_obj.paginator.count }}</strong> producto(s) con stock bajo. Se recomienda gestionar la reposición.</span>
 </div>
 {% endif %}
 
@@ -30,17 +30,15 @@
         <tr>
           <td><span class="sku-tag">{{ p.sku }}</span></td>
           <td style="font-weight:500">{{ p.name }}</td>
-          <td>{{ p.category|default:"—" }}</td>
+          <td>{% if p.category %}{{ p.category.name }}{% else %}—{% endif %}</td>
           <td>
             <span style="font-size:16px;font-weight:600;color:{% if p.stock_quantity == 0 %}var(--danger){% else %}var(--warning){% endif %}">{{ p.stock_quantity }}</span>
           </td>
           <td style="color:var(--text-secondary)">{{ p.minimum_stock }}</td>
           <td>
-            {% with deficit=p.minimum_stock|add:"-"|add:p.stock_quantity|stringformat:"s" %}
-            <span class="badge badge-red">{{ p.minimum_stock|add:0 }}</span>
-            {% endwith %}
+            <span class="badge badge-red">{{ p.stock_deficit }}</span>
           </td>
-          <td style="color:var(--text-secondary)">{{ p.supplier|default:"—" }}</td>
+          <td style="color:var(--text-secondary)">{% if p.supplier %}{{ p.supplier.name }}{% else %}—{% endif %}</td>
           <td>
             <a href="{% url 'inventory:movement_create' %}?product={{ p.pk }}" class="btn btn-accent btn-sm">Reponer</a>
           </td>

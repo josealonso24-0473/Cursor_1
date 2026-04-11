@@ -15,7 +15,7 @@ class MockProductRepository:
     """Devuelve objetos mock con los mismos atributos que Product para las vistas."""
 
     def get_all(self) -> Iterable:
-        return get_mock_products(active_only=True)
+        return get_mock_products(active_only=False)
 
     def get_by_id(self, product_id: int):
         return get_mock_product_by_id(product_id)

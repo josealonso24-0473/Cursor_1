@@ -14,6 +14,20 @@ from apps.products.models import Product
 PAGE_SIZE = 20
 
 
+def _safe_int(value):
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _safe_page_number(raw):
+    n = _safe_int(raw)
+    return n if n is not None and n >= 1 else 1
+
+
 def _parse_date(value):
     if not value:
         return None
@@ -35,8 +49,9 @@ def _get_movements_queryset(request):
         if movement_type:
             movements = [m for m in movements if m.movement_type == movement_type]
         if product_id:
-            pid = int(product_id)
-            movements = [m for m in movements if getattr(m.product, "id", m.product_id) == pid]
+            pid = _safe_int(product_id)
+            if pid is not None:
+                movements = [m for m in movements if getattr(m.product, "id", m.product_id) == pid]
         if date_from:
             movements = [m for m in movements if m.created_at.date() >= date_from]
         if date_to:
@@ -49,8 +64,9 @@ def _get_movements_queryset(request):
     date_to = _parse_date(request.GET.get("date_to"))
     if movement_type:
         movements = movements.filter(movement_type=movement_type)
-    if product_id:
-        movements = movements.filter(product_id=product_id)
+    pid = _safe_int(product_id)
+    if pid is not None:
+        movements = movements.filter(product_id=pid)
     if date_from:
         movements = movements.filter(created_at__date__gte=date_from)
     if date_to:
@@ -94,8 +110,7 @@ def movement_report_view(request):
         return response
 
     paginator = Paginator(movements, PAGE_SIZE)
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(_safe_page_number(request.GET.get("page")))
 
     if getattr(settings, "USE_MOCK_DATA", False):
         from config.mock_data import get_mock_products
@@ -119,10 +134,14 @@ def low_stock_report_view(request):
     if getattr(settings, "USE_MOCK_DATA", False):
         from config.mock_data import get_mock_low_stock_products
 
-        products = get_mock_low_stock_products()
+        products = list(get_mock_low_stock_products())
+        for p in products:
+            p.stock_deficit = max(0, p.minimum_stock - p.stock_quantity)
     else:
-        products = Product.objects.filter(
-            is_active=True, stock_quantity__lte=F("minimum_stock")
+        products = (
+            Product.objects.filter(is_active=True, stock_quantity__lte=F("minimum_stock"))
+            .annotate(stock_deficit=F("minimum_stock") - F("stock_quantity"))
+            .order_by("stock_quantity", "name")
         )
     if request.GET.get("export") == "csv":
         response = HttpResponse(content_type="text/csv")
@@ -136,22 +155,24 @@ def low_stock_report_view(request):
                 "Nombre",
                 "Stock",
                 "Stock mínimo",
+                "Déficit",
             ]
         )
         for p in products:
+            deficit = getattr(p, "stock_deficit", max(0, p.minimum_stock - p.stock_quantity))
             writer.writerow(
                 [
                     p.sku,
                     p.name,
                     p.stock_quantity,
                     p.minimum_stock,
+                    deficit,
                 ]
             )
         return response
 
     paginator = Paginator(products, PAGE_SIZE)
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(_safe_page_number(request.GET.get("page")))
 
     return render(
         request,

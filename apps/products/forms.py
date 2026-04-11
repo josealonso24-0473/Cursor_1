@@ -1,5 +1,6 @@
 from django import forms
 from django.conf import settings
+from django.db.models import Q
 
 from .models import Product, Category, Supplier
 
@@ -49,7 +50,15 @@ class ProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.all().order_by("name")
         self.fields["category"].required = False
-        self.fields["supplier"].queryset = Supplier.objects.all().order_by("name")
+        supplier_qs = Supplier.objects.filter(is_active=True).order_by("name")
+        inst = self.instance
+        if inst and inst.pk and inst.supplier_id:
+            supplier_qs = (
+                Supplier.objects.filter(Q(is_active=True) | Q(pk=inst.supplier_id))
+                .order_by("name")
+                .distinct()
+            )
+        self.fields["supplier"].queryset = supplier_qs
         self.fields["supplier"].required = False
 
 
@@ -75,7 +84,15 @@ class ProductFormMock(forms.Form):
         super().__init__(data=data, **kwargs)
         from config.mock_data import MOCK_CATEGORIES, MOCK_SUPPLIERS
         self.fields["category"].choices = [("", "Sin categoría")] + [(c.id, c.name) for c in MOCK_CATEGORIES]
-        self.fields["supplier"].choices = [("", "Sin proveedor")] + [(s.id, s.name) for s in MOCK_SUPPLIERS]
+        active_suppliers = [s for s in MOCK_SUPPLIERS if getattr(s, "is_active", True)]
+        if instance is not None:
+            sid = getattr(instance, "supplier_id", None)
+            if sid is not None:
+                current = next((s for s in MOCK_SUPPLIERS if s.id == sid), None)
+                if current is not None and current not in active_suppliers:
+                    active_suppliers = [*active_suppliers, current]
+        active_suppliers.sort(key=lambda s: s.name.lower())
+        self.fields["supplier"].choices = [("", "Sin proveedor")] + [(s.id, s.name) for s in active_suppliers]
         if instance is not None and not data:
             self.initial.update({
                 "name": getattr(instance, "name", ""),

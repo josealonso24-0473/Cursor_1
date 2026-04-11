@@ -11,8 +11,15 @@ def _mk_category(pk, name, description=None):
     return SimpleNamespace(pk=pk, id=pk, name=name, description=description or "")
 
 
-def _mk_supplier(pk, name, contact_email=None, phone=None):
-    return SimpleNamespace(pk=pk, id=pk, name=name, contact_email=contact_email or "", phone=phone or "")
+def _mk_supplier(pk, name, contact_email=None, phone=None, is_active=True):
+    return SimpleNamespace(
+        pk=pk,
+        id=pk,
+        name=name,
+        contact_email=contact_email or "",
+        phone=phone or "",
+        is_active=is_active,
+    )
 
 
 def _mk_product(pk, name, sku, category_id, supplier_id, unit_price, stock_quantity, minimum_stock, is_active=True):

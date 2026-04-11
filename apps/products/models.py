@@ -17,6 +17,7 @@ class Supplier(models.Model):
     name = models.CharField(max_length=200)
     contact_email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

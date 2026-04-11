@@ -8,7 +8,7 @@ from .base import AbstractProductRepository
 
 class DjangoProductRepository(AbstractProductRepository):
     def get_all(self) -> Iterable[Product]:
-        return Product.objects.filter(is_active=True)
+        return Product.objects.all()
 
     def get_by_id(self, product_id: int) -> Product:
         return Product.objects.get(pk=product_id, is_active=True)

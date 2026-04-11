@@ -18,6 +18,15 @@ from config.mock_data import (
 )
 
 
+def _safe_int(value):
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
 # ── Products ─────────────────────────────────────────────────────────────────
 
 @method_decorator(login_required, name="dispatch")
@@ -31,10 +40,16 @@ class ProductListView(ListView):
         repo = get_product_repository()
         service = ProductService(repo)
         category_id = self.request.GET.get("category")
+        supplier_id = self.request.GET.get("supplier")
         low_stock_only = self.request.GET.get("low_stock") == "1"
+        product_state = self.request.GET.get("product_state", "active") or "active"
+        if product_state not in ("active", "inactive", "all"):
+            product_state = "active"
         qs = service.list_products(
-            category_id=int(category_id) if category_id else None,
+            category_id=_safe_int(category_id),
+            supplier_id=_safe_int(supplier_id),
             low_stock_only=low_stock_only,
+            active_filter=product_state,
         )
         q = self.request.GET.get("q", "").strip()
         if q and hasattr(qs, "filter"):
@@ -46,10 +61,12 @@ class ProductListView(ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         if getattr(settings, "USE_MOCK_DATA", False):
-            from config.mock_data import MOCK_CATEGORIES
+            from config.mock_data import MOCK_CATEGORIES, MOCK_SUPPLIERS
             ctx["categories"] = MOCK_CATEGORIES
+            ctx["suppliers"] = sorted(MOCK_SUPPLIERS, key=lambda s: s.name.lower())
         else:
             ctx["categories"] = Category.objects.all().order_by("name")
+            ctx["suppliers"] = Supplier.objects.all().order_by("name")
         return ctx
 
 
@@ -177,7 +194,65 @@ def category_update_view(request, pk):
     return render(request, "categories/category_form.html", {"form": form, "title": "Editar categoría", "category": category})
 
 
+@login_required
+def category_delete_view(request, pk):
+    if request.method != "POST":
+        messages.warning(
+            request,
+            "Usa el botón Eliminar en la lista de categorías.",
+        )
+        return redirect("products:category_list")
+    if getattr(settings, "USE_MOCK_DATA", False):
+        from config.mock_data import MOCK_CATEGORIES, MOCK_PRODUCTS
+        cat = next((c for c in MOCK_CATEGORIES if c.id == pk), None)
+        if cat is None:
+            messages.error(request, "Categoría no encontrada.")
+            return redirect("products:category_list")
+        for p in MOCK_PRODUCTS:
+            if getattr(p, "category_id", None) == pk:
+                p.category_id = None
+                p.category = None
+        MOCK_CATEGORIES[:] = [c for c in MOCK_CATEGORIES if c.id != pk]
+        messages.success(request, "Categoría eliminada (modo demo).")
+        return redirect("products:category_list")
+    category = get_object_or_404(Category, pk=pk)
+    name = category.name
+    category.delete()
+    messages.success(request, f"Categoría «{name}» eliminada. Los productos asociados quedaron sin categoría.")
+    return redirect("products:category_list")
+
+
 # ── Suppliers ────────────────────────────────────────────────────────────────
+
+@login_required
+def supplier_toggle_active_view(request, pk):
+    if request.method != "POST":
+        messages.warning(
+            request,
+            "Usa el botón en la lista para cambiar el estado del proveedor.",
+        )
+        return redirect("products:supplier_list")
+    if getattr(settings, "USE_MOCK_DATA", False):
+        from config.mock_data import MOCK_SUPPLIERS
+        sup = next((s for s in MOCK_SUPPLIERS if s.id == pk), None)
+        if sup is None:
+            messages.error(request, "Proveedor no encontrado.")
+            return redirect("products:supplier_list")
+        sup.is_active = not getattr(sup, "is_active", True)
+        messages.success(
+            request,
+            "Proveedor habilitado." if sup.is_active else "Proveedor inhabilitado.",
+        )
+        return redirect("products:supplier_list")
+    supplier = get_object_or_404(Supplier, pk=pk)
+    supplier.is_active = not supplier.is_active
+    supplier.save(update_fields=["is_active"])
+    messages.success(
+        request,
+        "Proveedor habilitado." if supplier.is_active else "Proveedor inhabilitado.",
+    )
+    return redirect("products:supplier_list")
+
 
 @login_required
 def supplier_list_view(request):

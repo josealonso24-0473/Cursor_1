@@ -22,12 +22,23 @@
         <option value="{{ c.id }}" {% if request.GET.category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
         {% endfor %}
       </select>
+      <select name="supplier" onchange="this.form.submit()">
+        <option value="">Todos los proveedores</option>
+        {% for s in suppliers %}
+        <option value="{{ s.id }}" {% if request.GET.supplier == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
       <select name="low_stock" onchange="this.form.submit()">
         <option value="">Todo el stock</option>
         <option value="1" {% if request.GET.low_stock == "1" %}selected{% endif %}>Solo stock bajo</option>
       </select>
+      <select name="product_state" onchange="this.form.submit()">
+        <option value="active" {% if request.GET.product_state != "inactive" and request.GET.product_state != "all" %}selected{% endif %}>Solo activos</option>
+        <option value="inactive" {% if request.GET.product_state == "inactive" %}selected{% endif %}>Solo inactivos</option>
+        <option value="all" {% if request.GET.product_state == "all" %}selected{% endif %}>Todos</option>
+      </select>
       <button type="submit" class="btn btn-ghost">Buscar</button>
-      {% if request.GET.q or request.GET.category or request.GET.low_stock %}
+      {% if request.GET.q or request.GET.category or request.GET.supplier or request.GET.low_stock or request.GET.product_state == "inactive" or request.GET.product_state == "all" %}
       <a href="{% url 'products:list' %}" class="btn btn-ghost">Limpiar</a>
       {% endif %}
     </form>
@@ -53,8 +64,8 @@
         <tr>
           <td><span class="sku-tag">{{ p.sku }}</span></td>
           <td><span style="font-weight:500">{{ p.name }}</span></td>
-          <td>{{ p.category|default:"—" }}</td>
-          <td>{{ p.supplier|default:"—" }}</td>
+          <td>{% if p.category %}{{ p.category.name }}{% else %}—{% endif %}</td>
+          <td>{% if p.supplier %}{{ p.supplier.name }}{% else %}—{% endif %}</td>
           <td>
             <div class="stock-bar-wrap">
               <div class="stock-bar">
@@ -94,9 +105,9 @@
     <span class="table-count">{{ products|length }} producto(s)</span>
     {% if page_obj.has_other_pages %}
     <div class="pagination">
-      {% if page_obj.has_previous %}<a class="pg-btn" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}">← Anterior</a>{% endif %}
+      {% if page_obj.has_previous %}<a class="pg-btn" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}{% if request.GET.product_state == "inactive" or request.GET.product_state == "all" %}&product_state={{ request.GET.product_state }}{% endif %}">← Anterior</a>{% endif %}
       <span class="pg-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      {% if page_obj.has_next %}<a class="pg-btn" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}">Siguiente →</a>{% endif %}
+      {% if page_obj.has_next %}<a class="pg-btn" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.low_stock %}&low_stock={{ request.GET.low_stock }}{% endif %}{% if request.GET.product_state == "inactive" or request.GET.product_state == "all" %}&product_state={{ request.GET.product_state }}{% endif %}">Siguiente →</a>{% endif %}
     </div>
     {% endif %}
   </div>
