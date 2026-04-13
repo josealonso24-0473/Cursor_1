@@ -2,8 +2,8 @@
 Unit tests for ProductService.
 Uses an in-memory FakeRepository — no database required.
 """
-from django.test import SimpleTestCase
 from types import SimpleNamespace
+from django.test import SimpleTestCase
 
 from apps.products.repositories.base import AbstractProductRepository
 from apps.products.services.product_service import ProductService
@@ -84,7 +84,6 @@ class TestProductServiceListProducts(SimpleTestCase):
 
     def test_low_stock_only(self):
         result = list(self.service.list_products(low_stock_only=True))
-        # product A: stock=3 <= minimum=5, is_active=True
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].sku, "A-001")
 
