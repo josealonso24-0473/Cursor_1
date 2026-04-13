@@ -27,7 +27,6 @@ class TestLoginView(TestCase):
     def test_invalid_credentials_stay_on_login(self):
         response = self.client.post(self.url, {"username": "admin", "password": "wrong"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "")  # page re-renders (no redirect)
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
 
@@ -92,7 +91,7 @@ class TestCategoryViews(TestCase):
         self.client.force_login(self.user)
 
     def test_create_category(self):
-        response = self.client.post(
+        self.client.post(
             reverse("products:category_create"),
             {"name": "Herramientas", "description": "Herramientas de trabajo"},
         )
