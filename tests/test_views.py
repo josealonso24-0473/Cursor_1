@@ -3,7 +3,7 @@ Integration tests for product and authentication views.
 Tests the full request/response cycle with the Django test client.
 """
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.products.models import Category, Product, Supplier
@@ -50,6 +50,7 @@ class TestProductListViewAuthentication(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+@override_settings(USE_MOCK_DATA=False)
 class TestProductListFilters(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="admin", password="secret123")
@@ -84,6 +85,7 @@ class TestDashboardView(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+@override_settings(USE_MOCK_DATA=False)
 class TestCategoryViews(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="admin", password="secret123")
@@ -102,6 +104,7 @@ class TestCategoryViews(TestCase):
         self.assertFalse(Category.objects.filter(pk=cat.pk).exists())
 
 
+@override_settings(USE_MOCK_DATA=False)
 class TestSupplierViews(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="admin", password="secret123")
